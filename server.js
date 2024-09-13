@@ -1,63 +1,73 @@
-const express = require('express')
-const http = require('http')
-const { Server } = require('socket.io')
-const app = express()
-const server = http.createServer(app)
-const io = new Server(server)
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-// Servir arquivos estáticos, incluindo CSS
-app.use(express.static(__dirname))
+// Serve arquivos estáticos
+app.use(express.static(__dirname));
 
+// Rota principal
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + '/index.html')
-})
+    res.sendFile(__dirname + '/index.html');
+});
 
-let esperandoUsuario = null
+// Armazenar usuário que está esperando por um parceiro
+let waitingUser = null;
 
 io.on('connection', (socket) => {
     console.log("Um usuário se conectou.");
+
+    // Define o nome de usuário
     socket.on('set username', (username) => {
-        socket.username = username
+        socket.username = username;
         console.log(`${username} entrou na sala.`);
-        if (esperandoUsuario) {
-            socket.partner = esperandoUsuario
-            esperandoUsuario.partner = socket
-            esperandoUsuario.emit('chat start', `falando com: ${socket.username}.`)
-            socket.emit('chat start', `falando com: ${esperandoUsuario.username}.`)
-            esperandoUsuario = null
+
+        // Se houver um usuário esperando, conecte-os
+        if (waitingUser) {
+            socket.partner = waitingUser;
+            waitingUser.partner = socket;
+            waitingUser.emit('chat start', `falando com: ${socket.username}.`);
+            socket.emit('chat start', `falando com: ${waitingUser.username}.`);
+            waitingUser = null; // Reset waitingUser
         } else {
-            esperandoUsuario = socket
-            socket.emit('waiting', 'Aguardando por um usuário disponível.')
+            waitingUser = socket; // Aguarda um parceiro
+            socket.emit('waiting', 'Aguardando por um usuário disponível.');
         }
-    })
+    });
 
+    // Envia mensagem para o parceiro
     socket.on('chat message', (msg) => {
-        if(socket.partner) {
-            socket.partner.emit('chat message', `${socket.username}: ${msg}`)
+        if (socket.partner) {
+            socket.partner.emit('chat message', `${socket.username}: ${msg}`);
         }
-    })
+    });
 
+    // Desconectar manualmente
     socket.on("manual disconnect", () => {
-        if(socket.partner) {
-            socket.partner.emit('chat end', `${socket.username} desconectou.`)
-            socket.partner.partner = null
-            socket.partner = null
+        if (socket.partner) {
+            socket.partner.emit('chat end', `${socket.username} desconectou.`);
+            socket.partner.partner = null;
+            socket.partner = null;
         }
-        socket.emit('chat end', 'você desconectou.')
-    })
+        socket.emit('chat end', 'Você desconectou.');
+    });
 
+    // Ao desconectar, limpa a conexão
     socket.on('disconnect', () => {
         console.log('Usuário se desconectou.');
-        if(socket.partner) {
-            socket.partner.emit('chat end', `${socket.username} desconectou.`)
-            socket.partner.partner = null
+        if (socket.partner) {
+            socket.partner.emit('chat end', `${socket.username} desconectou.`);
+            socket.partner.partner = null;
         }
-        if(esperandoUsuario === socket) {
-            esperandoUsuario = null
+        if (waitingUser === socket) {
+            waitingUser = null;
         }
-    })
-})
+    });
+});
 
+// Inicializa o servidor
 server.listen(8080, () => {
     console.log('Servidor rodando na porta 8080');
-})
+});

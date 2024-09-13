@@ -25,7 +25,9 @@ label {
     font-size: 14px;
 }
 
-input[type="text"], input[type="submit"], #input {
+input[type="text"], 
+input[type="submit"], 
+#input {
     padding: 12px;
     border: 2px solid #4caf50;
     background-color: #2e2e2e;
@@ -36,7 +38,8 @@ input[type="text"], input[type="submit"], #input {
     transition: all 0.3s ease;
 }
 
-input[type="text"]:focus, #input:focus {
+input[type="text"]:focus, 
+#input:focus {
     border-color: #66bb6a;
     outline: none;
     box-shadow: 0 0 8px rgba(102, 187, 106, 0.5);
@@ -70,11 +73,18 @@ button:hover {
 #messages {
     background-color: #2e2e2e;
     padding: 10px;
-    height: 300px;
-    overflow-y: auto;
+    max-height: 300px; 
+    overflow-y: auto;  
     border-radius: 10px;
     margin-bottom: 10px;
     width: auto;
+    scrollbar-width: none;  
+    display: flex;           
+    flex-direction: column;  
+}
+
+#messages::-webkit-scrollbar {
+    display: none;  
 }
 
 #form {
@@ -88,7 +98,6 @@ button:hover {
 
 #input {
     flex-grow: 1;
-    width: 100%;
 }
 
 #disconnect {
@@ -101,4 +110,35 @@ button:hover {
     width: 100%;
 }
 
+.received-message {
+    color: #4caf50;
+    margin: 0;
+}
 
+.received-message-container,
+.sent-message-container {
+    padding: 15px;
+    border-radius: 20px;
+    margin: 10px;
+    word-wrap: break-word; 
+}
+
+.received-message-container {
+    text-align: left;
+    background-color: #1c1c1c;
+    max-width: 200px;
+    min-width: 80px;
+}
+
+.sent-message {
+    color: white;
+    margin: 0;
+}
+
+.sent-message-container {
+    text-align: left; 
+    background-color: #333;
+    max-width: 200px;
+    min-width: 80px;
+    margin-left: auto; 
+}

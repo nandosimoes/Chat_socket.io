@@ -16,7 +16,7 @@
         <button id="connect">Conectar</button>
     </div>
 
-    <div id="chat">
+    <div id="chat" style="display: none;">
         <div id="messages"></div>
         <form id="form" action="">
             <input id="input" autocomplete="off">
@@ -27,61 +27,85 @@
 </body>
 
 <script>
-    const socket = io();
-    const chatDiv = document.getElementById('chat');
-    const connectButton = document.getElementById('connect');
-    const disconnectButton = document.getElementById('disconnect');
-    const usernameInput = document.getElementById('username');
-    const messageDiv = document.getElementById('messages');
+const socket = io();
+const chatDiv = document.getElementById('chat');
+const connectButton = document.getElementById('connect');
+const disconnectButton = document.getElementById('disconnect');
+const usernameInput = document.getElementById('username');
+const messageDiv = document.getElementById('messages');
 
-    // Conectar ao clicar no botão
-    connectButton.addEventListener('click', () => {
-        const username = usernameInput.value;
-        if (username) {
-            socket.emit('set username', username); 
-            chatDiv.style.display = 'block';
-        } else {
-            alert('Por favor, insira um nome.');
-        }
-    });
+// Habilita ou desabilita a entrada de nome e o botão de conectar
+function toggleInputFields(disabled) {
+    usernameInput.disabled = disabled;
+    connectButton.disabled = disabled;
+}
 
-    document.getElementById('form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const input = document.getElementById('input');
-        socket.emit('chat message', input.value);
-        input.value = '';
-    });
+// Conectar ao clicar no botão
+connectButton.addEventListener('click', () => {
+    const username = usernameInput.value;
+    if (username) {
+        socket.emit('set username', username); 
+        chatDiv.style.display = 'block';
+        toggleInputFields(true); 
+    } else {
+        alert('Por favor, insira um nome.');
+    }
+});
 
-    // Desconectar ao clicar no botão
-    disconnectButton.addEventListener('click', () => {
-        socket.emit('manual disconnect');
-        chatDiv.style.display = 'none';
-        messageDiv.innerHTML = '';
-    });
+// Enviar mensagem ao enviar o formulário
+document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('input');
+    socket.emit('chat message', input.value);
+    displaySentMessage(input.value);
+    input.value = '';
+});
 
-    // Waiting de esperando
-    socket.on('waiting', (msg) => {
-        messageDiv.innerHTML = `<p>${msg}</p>`;
-    });
+// Desconectar ao clicar no botão
+disconnectButton.addEventListener('click', () => {
+    socket.emit('manual disconnect');
+    chatDiv.style.display = 'none';
+    messageDiv.innerHTML = '';
+    toggleInputFields(false); 
+});
 
-    // Início da conversa
-    socket.on('chat start', (msg) => {
-        messageDiv.innerHTML = `<p>${msg}</p>`;
-    });
+// Exibe mensagem enviada
+function displaySentMessage(message) {
+    const messageContainer = document.createElement('div');
+    messageContainer.classList.add('sent-message-container');   
+    const messageElement = document.createElement('p');
+    messageElement.classList.add('sent-message'); 
+    messageElement.textContent = message;
+    messageContainer.appendChild(messageElement);
+    messageDiv.appendChild(messageContainer);
+    messageDiv.scrollTop = messageDiv.scrollHeight; 
+}
 
-    // Exibindo a mensagem da outra pessoa
-    socket.on('chat message', (msg) => {
-        const messageElement = document.createElement('p');
-        messageElement.textContent = msg;
-        messageDiv.appendChild(messageElement);
-    });
+// Exibe mensagem da outra pessoa
+socket.on('chat message', (msg) => {
+    const messageContainer = document.createElement('div');
+    messageContainer.classList.add('received-message-container'); 
+    const messageElement = document.createElement('p');
+    messageElement.classList.add('received-message');
+    messageElement.textContent = msg;
+    messageContainer.appendChild(messageElement);
+    messageDiv.appendChild(messageContainer);
+    messageDiv.scrollTop = messageDiv.scrollHeight; 
+});
 
-    // Exibindo a mensagem de fim
-    socket.on('chat end', (msg) => {
-        const messageElement = document.createElement('p');
-        messageElement.textContent = msg;
-        messageDiv.appendChild(messageElement);
-    });
+// Exibe mensagens de status
+socket.on('waiting', (msg) => displayStatusMessage(msg, 'waiting-message'));
+socket.on('chat start', (msg) => displayStatusMessage(msg, 'start-message'));
+socket.on('chat end', (msg) => displayStatusMessage(msg, 'end-message'));
+
+// Função para exibir mensagens de status
+function displayStatusMessage(msg, className) {
+    const messageElement = document.createElement('p');
+    messageElement.classList.add(className);
+    messageElement.textContent = msg;
+    messageDiv.appendChild(messageElement);
+    messageDiv.scrollTop = messageDiv.scrollHeight; 
+}
 </script>
 
 </html>
